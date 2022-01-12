@@ -78,12 +78,12 @@ export default {
               this.loading = false;
               this.$message.success('~~登陆成功~~')
                 const token = data.token
-                window.sessionStorage.setItem('token',token)
+                window.sessionStorage.setItem('admin_jwt_token',token)
                 //存储name
                 const adminName = data.userinfo.username
                 window.sessionStorage.setItem('adminName',adminName)
                 console.log(token)
-                this.$router.replace({name:'payList'})
+                this.$router.replace({name:'userList'})
             }else{
               this.$message.warning('登陆失败，无该用户信息请前往注册~',3)
               this.loading = false;

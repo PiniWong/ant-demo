@@ -17,7 +17,9 @@ const router =new Router({
 
 router.beforeEach((to,from,next)=>{
     if(to.path == '/login') return next()
-    const token = sessionStorage.getItem('token');
+    const token = sessionStorage.getItem('admin_jwt_token');
+    console.log(to.path)
+
     if(!token) return next('/login')
     next()
 })

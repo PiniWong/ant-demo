@@ -8,28 +8,38 @@
         </a-form-item>
       </a-form>
       <div class="rightbut">
-         <a-button type='primary' class="but" @click="addPay">新增支付记录</a-button>
+         <a-button type='primary' class="but" @click="addUser">新增用户</a-button>
       </div>
     </div>
     <div class="role">
-      <a-table :columns="roletitle"  :data-source="roleData" :rowKey="el => (el.userId)">
+      <a-table :pagination="antdPagination" :columns="roletitle"  :data-source="roleData" :rowKey="el => (el.userId)" @change="onPageChange">
         <div class="vip" slot-scope="text, record," slot="vip"  >
           <a-switch :loading='switchLoading' @click="switchClick(record)"  default-checked :checked='!!text'>
             <a-icon slot="checkedChildren" type="check"  />
             <a-icon slot="unCheckedChildren" type="close" />
           </a-switch>
         </div>
-        <div class="action" slot="action" >
-          <span>删除</span>
-          <span>编辑</span>
+        <div class="action" slot="recordNum" slot-scope="text, record,">
+          <a-tooltip placement="top">
+              <template slot="title">
+                 <span>查看列表</span>
+              </template>
+              <span  @click="payList(record)" >{{text}}</span>
+          </a-tooltip>
+          
+
+        </div>
+        <div class="action" slot="action" slot-scope="text, record," >
+          <span @click="edit(record)">编辑</span>
+          <span @click="goChart(record)">图表</span>
         </div>
       </a-table>
     </div>
-    <a-modal  destroyOnClose  :title="'添加人员'" ok-text='确认' cancel-text='取消' :visible="showUserAdd" @ok="addUserOk" @cancel="showUserAdd = false" :width='700' >
+    <a-modal  destroyOnClose  :title="'添加用户'" ok-text='确认' cancel-text='取消' :visible="showUserAdd" @ok="addUserOk" @cancel="showUserAdd = false" :width='700' >
       <a-form :form="addUserForm" >
          <a-row :gutter="24">
           <a-col :span="12">
-                    <a-form-item label="人员姓名">
+                    <a-form-item label="用户名称">
                       <a-input class="input" placeholder="请填写" v-decorator="addUserRules.name" />
                     </a-form-item>
             </a-col>
@@ -81,8 +91,24 @@ const roletitle = [
     dataIndex: 'sex',
     key: 'sex',
   },
+  
   {
-    title: '已打卡天数',
+    title: '手机号',
+    dataIndex: 'phone',
+    key: 'phone',
+  },
+  {
+    title: '微信号',
+    dataIndex: 'weixin',
+    key: 'weixin',
+  },
+  {
+    title: '鸭鸭币',
+    dataIndex: 'coin',
+    key: 'coin',
+  },
+  {
+    title: '已签到天数',
     dataIndex: 'card',
     key: 'card',
   },
@@ -95,34 +121,19 @@ const roletitle = [
     title: '已记账条目',
     dataIndex: 'recordNum',
     key: 'recordNum',
+    scopedSlots: { customRender: 'recordNum' },
   },
-  {
-    title: '手机号',
-    dataIndex: 'phone',
-    key: 'phone',
-  },
-  {
-    title: '微信号',
-    dataIndex: 'weixin',
-    key: 'weixin',
-  },
-  {
+   {
     title: '是否已开通vip',
     dataIndex: 'vip',
     key: 'vip',
     scopedSlots: { customRender: 'vip' },
   },
   {
-    title: '鸭鸭币',
-    dataIndex: 'coin',
-    key: 'coin',
-    scopedSlots: { customRender: 'coin' },
+    title: '操作',
+    key: 'action',
+    scopedSlots: { customRender: 'action' },
   },
-  // {
-  //   title: '操作',
-  //   key: 'action',
-  //   scopedSlots: { customRender: 'action' },
-  // },
 ];
 const searchRules = {
   searchText:['searchText'],
@@ -131,11 +142,12 @@ const searchRules = {
   month:['month']
 }
 const addUserRules = {
-  name:['name', { rules: [{ required: true, message: '请输入人员名字' }] }],
+  name:['name', { rules: [{ required: true, message: '请输入用户名称' }] }],
   sex:['sex', { rules: [{ required: true, message: '请选择性别' }] }],
-  phone:['phone', { rules: [{}] }],
-  weixin:['weixin', { rules: [{}] }],
+  phone:['phone', { rules: [validator.phone] }],
+  weixin:['weixin'],
 }
+import {validator} from '@/utils'
 import axios from '@/utils/axios'
 
 export default {
@@ -147,7 +159,17 @@ export default {
 
       searchRules,
       form:this.$form.createForm(this, { name: "form" }),
-      pagination:{},
+      pagination:{
+        size: 10,
+        page: 1
+        },
+      antdPagination: {
+        defaultPageSize: 10,
+         showSizeChanger:true,
+        pageSizeChanger: true,
+        pageSizeOptions: ['5', '10', '15', '20'],
+
+      },
 
       showUserAdd:false,
       addUserForm:this.$form.createForm(this, { name: "addUserForm" }),
@@ -155,14 +177,22 @@ export default {
 
       switchLoading:false,
 
+
     }
   },
   methods:{
     //点击搜索时
+    onPageChange(antdPagination, filters, sorter){
+      this.pagination.size = antdPagination.pageSize
+      this.pagination.page = antdPagination.current
+      this.getUserList()
+    },
     onSearch(e) {
            e.preventDefault()
       this.form.validateFields((err,values)=>{
         if(!err){
+          this.pagination.size = 10
+          this.pagination.page = 1
           this.pagination.searchText = values.searchText
           this.getUserList()
         }
@@ -178,19 +208,25 @@ export default {
             el.sex = el.sex == 1 ? '男' :'女'
           });
           this.roleData = data
+          this.antdPagination = {
+            total: object.count, // 总条数
+            showTotal: total => {
+              return `总共 ${total} 项`
+            }
+          }
         }
       })
     },
      //新增人物
     addUser(){
       this.showUserAdd=true
-      
     },
     addUserOk(){
       this.addUserForm.validateFields((err,values)=>{
         if(!err){
           const params = {
             ...values,
+            userId:this.userId
           }
           
           axios.post('/admin/addUser',params,{useJSONContentType:true}).then((res)=>{
@@ -228,6 +264,42 @@ export default {
             }
       })
 
+    },
+    //查看支付列表
+    payList(item){
+      this.$router.push({
+        name:'payList',
+        query:{
+          userId:item.userId,
+          userName:item.name,
+        }
+      })
+    },
+    edit(item){
+      this.showUserAdd=true
+      this.userId = item.userId
+      console.log(item.sex)
+      const sex = item.sex == '男' ?  1 : 2
+      this.$nextTick(()=>{  
+        this.addUserForm.setFieldsValue({
+            name:item.name,
+            sex:sex,
+            phone:item.phone,
+            weixin:item.weixin,
+          })
+      })
+
+    },
+    goChart(item){
+      const userId = item.userId
+      const userName = item.name
+      this.$router.push({
+        name:'payChart',
+        query:{
+          userId:userId,
+          userName:userName
+        }
+      })
     }
 
   },
@@ -243,11 +315,12 @@ export default {
   .action{
     span{
       margin-right: 10px;
+      cursor: pointer;
       &:nth-child(1){
-        color: red;
+        color: rgba(24, 144, 255);
       }
       &:nth-child(2){
-        color: rgba(24, 144, 255);
+        color: rgb(148, 124, 174);
       }
     }
   }

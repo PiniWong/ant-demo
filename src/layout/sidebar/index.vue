@@ -37,26 +37,34 @@ export default {
       
       navBar: [
         {
-          name: "支付管理",
-          type: "user",
-          chil: [
-            {
-              cname: "支付记录列表",
-              path: "/payList",
-            },
-            {
-              cname: "支出类型配置",
-              path: "/beuse",
-            },
-          ],
-        },
-        {
           name: "用户管理",
           type: "team",
           chil: [
             {
               cname: "用户列表",
               path: "/userList",
+            },
+          ],
+        },
+        {
+          name: "配置管理",
+          type: "user",
+          chil: [
+            // {
+            //   cname: "支付记录列表",
+            //   path: "/payList",
+            // },
+            {
+              cname: "支出类型配置",
+              path: "/beuse",
+            },
+            {
+              cname: "签到配置",
+              path: "/singin",
+            },
+            {
+              cname: "兑换商品配置",
+              path: "/convert",
             },
           ],
         },

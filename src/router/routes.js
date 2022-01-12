@@ -6,7 +6,11 @@ const login = () => import('@/view/login/login');
 const productList = () => import('@/view/productList/productList')
 const userList = () => import('@/view/user/user')
 const payList = () => import('@/view/pay/payList')
+const payChart = () => import('@/view/pay/payChart')
+//配置
 const beuse = () => import('@/view/beuse/beuse')
+const singin = () => import('@/view/singin/singin')
+const convert = () => import('@/view/convert/convert')
 // const home = () => import('@/view/pay/payList')
 const statement = () => import('@/view/statement/statement')
 const limlist = () => import('@/view/limlist/limlist')
@@ -27,19 +31,51 @@ export default [{
     meta: {
         title: "首页"
     },
+    name:'main',
     component: main,
-    children: [ {
+    children: [
+    
+      {
         path: '',
-        redirect: '/payList',
+        redirect: '/userList',
       },
       {
+        path: '',
+        redirect: '/userList',
+      },
+    {
+        path: '/singin',
+        name: 'singin',
+        meta: {
+            title: '签到配置'
+        },
+        component: singin
+    },
+    {
+        path: '/convert',
+        name: 'convert',
+        meta: {
+            title: '兑换商品配置'
+        },
+        component: convert
+    },
+    {
         path: '/payList',
         name: 'payList',
         meta: {
             title: '支付列表'
         },
         component: payList
-    },{
+    },
+    {
+        path: '/payChart',
+        name: 'payChart',
+        meta: {
+            title: '用户周图表'
+        },
+        component: payChart
+    },
+    {
         path: '/beuse',
         name: 'beuse',
         meta: {
@@ -77,4 +113,5 @@ export default [{
     },
     ]
 }
+
 ]

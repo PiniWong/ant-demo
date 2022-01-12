@@ -2,7 +2,7 @@
   <div class="userListBox">
     <div class="topBox">
       <a-form style="margin: 20px" layout="inline" @submit="onSearch" :form="form">
-        <a-form-item>
+       <!-- <a-form-item>
           <a-select  v-decorator="searchRules.userId"  allowClear class="input" placeholder="请选择人物">
                 <a-select-option v-for="(item,index) in userList" :key="index" :value='item.userId'>
                   {{item.name}}
@@ -15,9 +15,21 @@
                     <a-icon type="plus-circle" @click="addUser" class="icon" />
 
               </a-tooltip>
-        </a-form-item>
+        </a-form-item>  -->
+      <span style="margin-right: 20px">用户：{{userName}}</span>
+
         <a-form-item>
-            <a-select  v-decorator="searchRules.pay_type"  allowClear class="input"  placeholder="请选择支付方式">
+            <a-select  v-decorator="searchRules.payOrIncome"  allowClear class="input"  placeholder="支付/收入">
+                <a-select-option  :value='0'>
+                  支出
+                </a-select-option>
+                <a-select-option  :value='1'>
+                  收入
+                </a-select-option>
+            </a-select>
+        </a-form-item>  
+        <a-form-item>
+            <a-select  v-decorator="searchRules.pay_type"  allowClear class="input"  placeholder="支付方式">
                 <a-select-option v-for="(item,index) in paytypeList" :key="index" :value='item.pay_type'>
                   {{item.info}}
                 </a-select-option>
@@ -29,18 +41,18 @@
                     <a-icon type="plus-circle" @click="addPayType" class="icon" />
             </a-tooltip>
         </a-form-item>
-        <a-form-item label='支付类型'>
+        <a-form-item label='支付/收入类型'>
           
             <span v-if="selectedTag" >
               <template v-for="(item,index) in beuseList" >
                 <a-tag class="tag" closable @close="()=>{selectedTag=null}" v-if="selectedTag==item.beuse"  :color="item.color" :key="index"  :value='item.beuse'>
                   <span>{{item.beType}}</span>
                 </a-tag>
-              </template>
+              </template> 
             </span>
           <a-tooltip v-else  placement="top">
             <template slot="title">
-              <span>选择支付类型</span>
+              <span>选择支付/收入类型</span>
             </template>
                     <a-icon type="plus-circle" @click="addBeuse" class="icon" />
           </a-tooltip>
@@ -63,17 +75,19 @@
         </a-form-item>
       </a-form>
       <div class="rightbut">
-         <a-button type='primary' class="but" @click="addPay">新增支付记录</a-button>
+        <a-button class="but" style="margin-right: 20px" @click="changeChartPage"><a-icon type="swap"  />切换到图表</a-button>
+         <a-button type='primary' class="but" @click="addPay">新增记录</a-button>
       </div>
     </div>
     <!-- 列表--- -->
     <a-table
       :loading="loading"
       table-layout="fixed"
-      :pagination="pagination"
+      :pagination="antdPagination"
       :rowKey="el => (el.id+','+el.name)"
       :columns="columns"
       :data-source="dataSource"
+       @change="onPageChange"
     >
       <span slot="pay" slot-scope="text">
         <span  v-for="(item,index) in paytypeList" :key="index" :value='item.pay_type'>
@@ -86,6 +100,10 @@
                   <span>{{text}}</span>
                 </a-tag>
               </template>
+      </span>
+      <span slot="payOrIncome" slot-scope="text">
+        <span v-if="text.payOrIncome==0">支出</span>
+        <span v-else>收入</span>
       </span>
       
 
@@ -101,22 +119,40 @@
 
     <!-- 弹窗--- -->
     
-    <a-modal  :zIndex='10' destroyOnClose  ok-text='确认' cancel-text='取消' :title="'新增支付记录'" :visible="showpayAdd" @ok="showpayOK" @cancel="()=>{showpayAdd = false}" :width="750">
+    <a-modal  :zIndex='10' destroyOnClose  ok-text='确认' cancel-text='取消' :title="'新增记录'" :visible="showpayAdd" @ok="showpayOK" @cancel="()=>{showpayAdd = false}" :width="750">
       <a-form :form="addPayForm" >
       <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item  label="人物">
 
-              <a-select  v-decorator="payRules.userId"  allowClear class="input"  placeholder="请选择人物">
+              <!-- <a-select   v-decorator="payRules.userId"  allowClear class="input"  placeholder="请选择人物">
                 <a-select-option v-for="(item,index) in userList" :key="index" :value='item.userId'>
                   {{item.name}}
                 </a-select-option>
               </a-select>
-              <a-icon type="plus-circle" @click='addUser' class="icon" />
+              <a-icon type="plus-circle" @click='addUser' class="icon" /> -->
+              <!-- <a-input></a-input> -->
+              <span>
+                {{userName}}
+              </span>
 
             </a-form-item>
 
             </a-col>
+          <a-col :span="12" >
+            <a-form-item  label="支付/收入">
+            <a-select  v-decorator="payRules.payOrIncome"  allowClear class="input" placeholder="请选择">
+                <a-select-option  :value='0'>
+                  支出
+                </a-select-option>
+                <a-select-option  :value='1'>
+                  收入
+                </a-select-option>
+            </a-select>
+            </a-form-item>
+         </a-col>
+      </a-row>
+    <a-row :gutter="24">
           <a-col :span="12" >
             <a-form-item  label="支付方式">
             <a-select  v-decorator="payRules.pay_type"  allowClear class="input"  placeholder="请选择支付方式">
@@ -126,20 +162,20 @@
             </a-select>
             </a-form-item>
           </a-col>
-      </a-row>
-    <a-row :gutter="24">
+      
         <a-col :span="12">
             <a-form-item label="支付金额">
               <a-input class="input" placeholder="请填写" v-decorator="payRules.money" />
             </a-form-item>
           </a-col>
+    </a-row>
+<a-row :gutter="24">
         <a-col :span="12">
             <a-form-item label="日期" >
               <a-date-picker class="input" placeholder="请填写日期" v-decorator="payRules.date" />
             </a-form-item>
         </a-col>
-    </a-row>
-    <a-row :gutter="24">
+    
         <a-col :span="12">
             <a-form-item label="支付类型">
               <span v-if="selectedTag1" >
@@ -205,6 +241,11 @@ const columns = [
     key: "name",
     title: "用户",
   },
+   {
+    title: "支出/收入",
+    key: "payOrIncome",
+    scopedSlots: { customRender: "payOrIncome" },
+  },
   {
     title: "支付方式",
     key: "pay",
@@ -240,13 +281,14 @@ const columns = [
 ];
 const payRules = {
   userId:['userId',{ rules: [{ required: true, message: '请选择人物' }] }],
+  payOrIncome:['payOrIncome',{ rules: [{ required: true, message: '请选择支付方式' }] }],
   pay_type:['pay_type',{ rules: [{ required: true, message: '请选择支付方式' }] }],
   date:['date' ,{ rules: [{ required: true, message: '请选择时间' }] }],
   money:['money', { rules: [{ required: true, message: '请选择输入金额' },validator.number] }],
   remark:['remark',{ rules: [{ required: true, message: '请输入订单备注' }] }],
 }
 const searchRules = {
-  userId:['userId'],
+  payOrIncome:['payOrIncome'],
   pay_type:['pay_type'],
   date:['date'],
   month:['month']
@@ -281,17 +323,22 @@ export default {
       //表格
       loading: false,
       form1: this.$form.createForm(this, { name: "edit" }),
-      // pagination: {
-      //   defaultPageSize: 10,
-      //   showTotal: (total) => `共${total}条数据`,
-      //   pageSizeChanger: true,
-      // },
+      antdPagination: {
+        defaultPageSize: 10,
+         showSizeChanger:true,
+        pageSizeChanger: true,
+        pageSizeOptions: ['5', '10', '15', '20'],
+
+      },
       searchInput: "",
 
       //新增
       form:this.$form.createForm(this, { name: "form" }),
       searchRules,
-      pagination:{},
+      pagination:{
+        size: 10,
+        page: 1
+      },
       addPayForm:this.$form.createForm(this, { name: "addPayForm" }),
       listId:null,
       showpayAdd: false,
@@ -306,6 +353,7 @@ export default {
       
 
       //新增人员
+      userName:null,
       
 
       //新增方式类型
@@ -346,6 +394,11 @@ export default {
 
   methods: {
     //列表
+    onPageChange(antdPagination, filters, sorter){
+      this.pagination.size = antdPagination.pageSize
+      this.pagination.page = antdPagination.current
+      this.getPayList()
+    },
     getPayList(){
       axios.post('/admin/paylist',this.pagination,{useJSONContentType:true}).then((res)=>{
       // console.log(res.data.list)
@@ -356,6 +409,12 @@ export default {
           el.date = moment(el.date).format('YYYY-MM-DD')
         });
         this.dataSource=data
+         this.antdPagination = {
+            total: object.count, // 总条数
+            showTotal: total => {
+              return `总共 ${total} 项`
+            }
+          }
       }
       
     })
@@ -365,6 +424,22 @@ export default {
       this.showpayAdd = true;
       this.listId=null;
       this.selectedTag1=null;
+      // const userId = this.pagination.userId
+    },
+    //修改
+    showEdit(text) {
+      this.showpayAdd = true;
+      this.listId = text.id
+      this.$nextTick(()=>{  
+        this.addPayForm.setFieldsValue({
+          payOrIncome:text.payOrIncome,
+          pay_type:text.pay_type,
+          date:text.date,
+          money: text.money,
+          remark:text.remark,
+        })
+      })
+      this.selectedTag1=text.beuse
     },
     showpayOK(){
       console.log('ok')
@@ -374,10 +449,12 @@ export default {
             values.date=moment(values.date).format('YYYY-MM-DD')
           }
           if(!this.selectedTag1){
-            this.$message.error('请输入')
+            this.$message.warning('请选择支付类型')
           }
+          console.log(this.pagination.userId)
           const params = {
             ...values,
+            userId:this.pagination.userId,
             id:this.listId,
             beuse:this.selectedTag1 
 
@@ -404,7 +481,9 @@ export default {
            e.preventDefault()
       this.form.validateFields((err,values)=>{
         if(!err){
-          this.pagination.userId = values.userId
+          this.pagination.size = 10
+          this.pagination.page = 1
+          this.pagination.payOrIncome = values.payOrIncome
           this.pagination.pay_type = values.pay_type
           this.pagination.beuse = this.selectedTag
           this.pagination.date=null
@@ -446,23 +525,7 @@ export default {
       });
     },
 
-    //修改
-    showEdit(text) {
-      this.showpayAdd = true;
-      this.listId = text.id
-      this.$nextTick(()=>{  
-        this.addPayForm.setFieldsValue({
-          userId:text.userId,
-          pay_type:text.pay_type,
-          date:text.date,
-          money: text.money,
-          remark:text.remark,
-        })
-      })
-      this.selectedTag1=text.beuse
-      
-
-    },
+    
     // editOk() {
     //   console.log("修改数据");
     // },
@@ -498,19 +561,18 @@ export default {
       if(object.state.success){
         const data = object.list
         this.userList = data
-        console.log(this.userList)
       }
 
       })
     },
     //新增人物
-    addUser(){
-      // this.showUserAdd=true
-      this.showpayAdd = false;
-      this.$router.push({
-        name:'userList'
-      })
-    },
+    // addUser(){
+    //   // this.showUserAdd=true
+    //   this.showpayAdd = false;
+    //   this.$router.push({
+    //     name:'userList'
+    //   })
+    // },
    
 
     //获取支付方式列表
@@ -596,22 +658,43 @@ export default {
       this.clickTag=id
     },
 
+    //切换图标
+    changeChartPage(){
+      this.$router.push({
+        name:'payChart',
+        query:{
+          userId:this.pagination.userId,
+          userName:this.userName,
+        }
+      })
+    }
+
 
 
   },
+  mounted(){
+        
+  },
   created() {
+    // this.form.setFieldsValue({
+    //         userId:this.pagination.userId,
+    //       }) 
     this.getUserList()
+    const userId= this.$route.query.userId
+    const userName= this.$route.query.userName
+    this.pagination.userId = userId
+    this.userName = userName
+    
     this.getBeuseList()
     this.getPayList()
     this.getpayTypeList()
-    axios.post('/admin/monthPayList',{
-      name:'东东',
-      date:'2021-12-10',
-    },{useJSONContentType:true}).then((res)=>{
-      console.log(res)
-    })
+    // axios.post('/admin/monthPayList',{
+    //   name:'东东',
+    //   date:'2021-12-10',
+    // },{useJSONContentType:true}).then((res)=>{
+    //   console.log(res)
+    // })
   },
-  mounted() {},
 };
 </script>
 
